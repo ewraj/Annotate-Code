@@ -1,6 +1,5 @@
 # Annotate-Code
 
-# AnnotateCode
 
 **Read code. Annotate it. That's it.**
 
