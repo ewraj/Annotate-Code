@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AnnotateCode</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #171717;
+      background: #fff;
+    }
+
+    header {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 42px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 650;
+      letter-spacing: -0.3px;
+    }
+
+    nav {
+      display: flex;
+      gap: 24px;
+      font-size: 14px;
+    }
+
+    nav a {
+      color: #666;
+      text-decoration: none;
+    }
+
+    nav a:hover { color: #111; }
+
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 115px 28px 80px;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(38px, 6vw, 58px);
+      line-height: 1.05;
+      letter-spacing: -2.5px;
+      font-weight: 650;
+    }
+
+    .subtitle {
+      margin: 20px auto 34px;
+      max-width: 520px;
+      color: #666;
+      font-size: 17px;
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button, .github {
+      height: 46px;
+      border-radius: 7px;
+      padding: 0 19px;
+      font: inherit;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .primary {
+      border: 1px solid #111;
+      background: #111;
+      color: white;
+    }
+
+    .secondary {
+      border: 1px solid #ddd;
+      background: white;
+      color: #333;
+    }
+
+    .small {
+      margin-top: 15px;
+      color: #999;
+      font-size: 12px;
+    }
+
+    .preview {
+      margin: 90px auto 0;
+      max-width: 760px;
+      text-align: left;
+      border: 1px solid #e5e5e5;
+      border-radius: 9px;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0,0,0,.04);
+      background: #fafafa;
+    }
+
+    .bar {
+      height: 38px;
+      border-bottom: 1px solid #e5e5e5;
+      background: #f7f7f7;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      color: #777;
+      font-size: 12px;
+    }
+
+    .code {
+      padding: 24px 28px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      color: #333;
+      position: relative;
+    }
+
+    .line { display: flex; }
+    .num {
+      width: 42px;
+      color: #aaa;
+      user-select: none;
+      text-align: right;
+      margin-right: 20px;
+    }
+
+    .comment {
+      color: #777;
+      background: #fff3a8;
+      padding: 0 3px;
+      border-radius: 2px;
+    }
+
+    .ink {
+      position: absolute;
+      right: 40px;
+      top: 100px;
+      color: #555;
+      font-family: "Comic Sans MS", cursive;
+      font-size: 15px;
+      transform: rotate(-3deg);
+    }
+
+    footer {
+      padding: 0 28px 38px;
+      text-align: center;
+      color: #aaa;
+      font-size: 12px;
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 0 20px; }
+      main { padding-top: 80px; }
+      .preview { margin-top: 65px; }
+      .ink { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="logo">AnnotateCode</div>
+    <nav>
+      <a href="#">GitHub</a>
+      <a href="#">About</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Read code. Annotate it. That's it.</h1>
+
+    <p class="subtitle">
+      A simple way to read, write on, and understand code.
+    </p>
+
+    <div class="actions">
+      <button class="primary" onclick="alert('Codebase picker coming soon')">
+        Open a codebase
+      </button>
+      <button class="secondary" onclick="openGithub()">
+        Paste a GitHub URL
+      </button>
+    </div>
+
+    <div class="small">Free and open source.</div>
+
+    <div class="preview">
+      <div class="bar">services / runner.ts</div>
+      <div class="code">
+        <div class="line"><span class="num">41</span><span>export async function runJob(job) {</span></div>
+        <div class="line"><span class="num">42</span><span>&nbsp;&nbsp;const runtime = await getRuntime(job);</span></div>
+        <div class="line"><span class="num">43</span><span>&nbsp;&nbsp;await runtime.prepare();</span></div>
+        <div class="line"><span class="num">44</span><span>&nbsp;&nbsp;const result = await runtime.run();</span></div>
+        <div class="line"><span class="num">45</span><span>&nbsp;&nbsp;return result;</span></div>
+        <div class="line"><span class="num">46</span><span>}</span></div>
+
+        <div class="ink">← understand this part</div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Made for reading code.
+  </footer>
+
+  <script>
+    function openGithub() {
+      const url = prompt("Paste a public GitHub repository URL:");
+      if (url) {
+        alert("Opening " + url);
+      }
+    }
+  </script>
+</body>
+</html>
