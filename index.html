@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AnnotateCode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&display=swap" rel="stylesheet" />
   <style>
     * { box-sizing: border-box; }
 
@@ -121,40 +124,79 @@
       font-size: 12px;
     }
 
-    .code {
-      padding: 24px 28px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 13px;
-      line-height: 1.8;
-      color: #333;
-      position: relative;
+    .bar .meta {
+      margin-left: auto;
+      color: #a3a3a3;
+      font-size: 11px;
     }
 
-    .line { display: flex; }
+    .code {
+      padding: 26px 28px 32px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.85;
+      color: #333;
+      position: relative;
+      overflow-x: auto;
+    }
+
+    .line { display: flex; position: relative; }
     .num {
       width: 42px;
+      flex: none;
       color: #aaa;
       user-select: none;
       text-align: right;
       margin-right: 20px;
     }
+    .src { white-space: pre; }
 
-    .comment {
-      color: #777;
-      background: #fff3a8;
-      padding: 0 3px;
-      border-radius: 2px;
-    }
-
-    .ink {
+    /* bookmark flag in the gutter */
+    .line.marked .num::before {
+      content: "";
       position: absolute;
-      right: 40px;
-      top: 100px;
-      color: #555;
-      font-family: "Comic Sans MS", cursive;
-      font-size: 15px;
-      transform: rotate(-3deg);
+      left: -14px;
+      top: 4px;
+      bottom: 4px;
+      width: 3px;
+      border-radius: 2px;
+      background: #f59e0b;
     }
+
+    /* highlighter: uneven ends, like a real marker swipe */
+    .hl {
+      padding: 3px 6px;
+      margin: 0 -4px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 24' preserveAspectRatio='none'%3E%3Cpath d='M3.4 5.1C42 2.1 118 4.2 197 2.9L198.6 19.1C139 22.3 62 19.6 1.8 21.4Z' fill='%23ffdb4d' fill-opacity='.82'/%3E%3C/svg%3E") no-repeat center / 100% 118%;
+    }
+
+    /* pen: hand-drawn underline stroke */
+    .pen { position: relative; }
+    .pen::after {
+      content: "";
+      position: absolute;
+      left: -4px; right: -4px; bottom: -6px;
+      height: 8px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 8' preserveAspectRatio='none'%3E%3Cpath d='M2.4 5.8C26 1.9 49 6.9 84 4.3c33-2.5 58 4.2 113 -1.9' fill='none' stroke='%232f5fd0' stroke-width='1.9' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+    }
+
+    /* margin notes, in ink */
+    .note {
+      position: absolute;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: "Caveat", "Segoe Print", "Bradley Hand", cursive;
+      font-size: 18px;
+      line-height: 1;
+      white-space: nowrap;
+      color: #2f5fd0;
+      transform: rotate(-1.2deg);
+    }
+    .note.q { color: #d1495b; transform: rotate(1deg); }
+
+    .arrow { width: 38px; height: 18px; flex: none; overflow: visible; }
+    .arrow path { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
     footer {
       padding: 0 28px 38px;
@@ -167,7 +209,10 @@
       header { padding: 0 20px; }
       main { padding-top: 80px; }
       .preview { margin-top: 65px; }
-      .ink { display: none; }
+      .note { display: none; }
+      .code { font-size: 12px; padding: 20px 18px 24px; }
+      .num { width: 26px; margin-right: 14px; }
+      .line.marked .num::before { left: -9px; }
     }
   </style>
 </head>
@@ -200,16 +245,17 @@
     <div class="small">Free and open source.</div>
 
     <div class="preview">
-      <div class="bar">services / runner.ts</div>
+      <div class="bar">
+        services / runner.ts
+        <span class="meta">2 notes &middot; 1 bookmark</span>
+      </div>
       <div class="code">
-        <div class="line"><span class="num">41</span><span>export async function runJob(job) {</span></div>
-        <div class="line"><span class="num">42</span><span>&nbsp;&nbsp;const runtime = await getRuntime(job);</span></div>
-        <div class="line"><span class="num">43</span><span>&nbsp;&nbsp;await runtime.prepare();</span></div>
-        <div class="line"><span class="num">44</span><span>&nbsp;&nbsp;const result = await runtime.run();</span></div>
-        <div class="line"><span class="num">45</span><span>&nbsp;&nbsp;return result;</span></div>
-        <div class="line"><span class="num">46</span><span>}</span></div>
-
-        <div class="ink">← understand this part</div>
+        <div class="line marked"><span class="num">41</span><span class="src">export async function runJob(job) {</span></div>
+        <div class="line"><span class="num">42</span><span class="src">  const runtime = await getRuntime(job);</span></div>
+        <div class="line"><span class="num">43</span><span class="src">  <span class="hl">await runtime.prepare();</span></span><span class="note" style="left:300px"><svg class="arrow" viewBox="0 0 38 18" aria-hidden="true"><path d="M36 4.5C24 1.5 12 6 4 12"/><path d="M4 12L12.5 11M4 12L7.5 4"/></svg> blocks &mdash; sandbox boots here</span></div>
+        <div class="line"><span class="num">44</span><span class="src">  const result = await <span class="pen">runtime.run()</span>;</span></div>
+        <div class="line"><span class="num">45</span><span class="src">  return result;</span><span class="note q" style="left:232px"><svg class="arrow" viewBox="0 0 38 18" aria-hidden="true"><path d="M36 4.5C24 1.5 12 6 4 12"/><path d="M4 12L12.5 11M4 12L7.5 4"/></svg> no retry if this throws?</span></div>
+        <div class="line"><span class="num">46</span><span class="src">}</span></div>
       </div>
     </div>
   </main>
