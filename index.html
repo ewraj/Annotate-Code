@@ -75,12 +75,15 @@
       flex-wrap: wrap;
     }
 
-    button, .github {
+    button, a.primary {
+      display: inline-flex;
+      align-items: center;
       height: 46px;
       border-radius: 7px;
       padding: 0 19px;
       font: inherit;
       font-size: 14px;
+      text-decoration: none;
       cursor: pointer;
     }
 
@@ -234,9 +237,9 @@
     </p>
 
     <div class="actions">
-      <button class="primary" onclick="alert('Codebase picker coming soon')">
+      <a class="primary" href="/app/">
         Open a codebase
-      </button>
+      </a>
       <button class="secondary" onclick="openGithub()">
         Paste a GitHub URL
       </button>
@@ -268,7 +271,7 @@
     function openGithub() {
       const url = prompt("Paste a public GitHub repository URL:");
       if (url) {
-        alert("Opening " + url);
+        location.href = "/app/?repo=" + encodeURIComponent(url.trim());
       }
     }
   </script>
