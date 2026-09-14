@@ -1,0 +1,203 @@
+/*
+ * Shell styling, following the landing page: white, thin borders, small radii, plenty of
+ * whitespace, almost no colour. The only thing in this product allowed to be loud is the
+ * ink a user puts on the page themselves.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  color: #171717;
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+.ac-app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- toolbar ----------------------------------------------------------- */
+
+.ac-toolbar {
+  height: 52px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  border-bottom: 1px solid #eee;
+}
+
+.ac-wordmark {
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.3px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.ac-path {
+  color: #999;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ac-toolbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ac-mode-hint {
+  color: #aaa;
+  font-size: 12px;
+}
+
+.ac-icon-button {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: #555;
+  cursor: pointer;
+}
+
+.ac-icon-button:hover {
+  background: #f4f4f4;
+}
+
+.ac-icon-button svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ac-mode {
+  height: 30px;
+  padding: 0 13px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  background: #fff;
+  color: #333;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ac-mode.is-active {
+  border-color: #111;
+  background: #111;
+  color: #fff;
+}
+
+/* ---- body -------------------------------------------------------------- */
+
+.ac-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.ac-sidebar {
+  width: 260px;
+  flex: none;
+  border-right: 1px solid #eee;
+  background: #fcfcfc;
+  overflow-y: auto;
+  transition: width 0.18s ease;
+}
+
+.ac-sidebar.is-collapsed {
+  width: 0;
+  border-right: 0;
+  overflow: hidden;
+}
+
+/* The document owns the rest of the screen, and nothing decorates it. */
+.ac-document {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  position: relative;
+}
+
+/* While a drawing tool is armed, the pointer must not scroll the document out from under
+   a stroke. Phase 2 attaches the ink surface here. */
+.ac-document.is-armed {
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+
+/* ---- empty states ------------------------------------------------------ */
+
+.ac-empty {
+  padding: 22px 20px;
+  line-height: 1.6;
+}
+
+.ac-empty p {
+  margin: 0 0 8px;
+}
+
+.ac-empty-center {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-bottom: 120px;
+}
+
+.ac-empty-title {
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.6px;
+}
+
+.ac-muted {
+  color: #999;
+  max-width: 420px;
+}
+
+@media (max-width: 720px) {
+  .ac-path,
+  .ac-mode-hint {
+    display: none;
+  }
+
+  /* On a tablet or phone the tree is a sheet over the document, not a column beside it. */
+  .ac-sidebar {
+    position: absolute;
+    top: 52px;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  }
+}

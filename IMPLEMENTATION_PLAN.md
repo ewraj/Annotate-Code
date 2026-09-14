@@ -4,7 +4,9 @@ Companion to `ANNOTATECODE_PRODUCT_GIST.md`. The gist defines **what** the produ
 and refuses to be; this document defines **how** it gets built, in what order, and
 which decisions are expensive to reverse.
 
-Status: pre-Phase-0. Nothing in `src/` yet. Live landing page at https://annotatecode.com.
+Status: **Phase 0 built, awaiting the Pages source switch.** Vite + React + TS scaffold,
+IndexedDB schema, the anchoring ladder (34 tests), and the tool palette are in `src/`.
+Live landing page at https://annotatecode.com, still served by the legacy root build.
 
 ---
 
@@ -317,6 +319,83 @@ offset, and cull strokes whose `bbox` falls outside the visible band.
 | Eraser | Whole-stroke erase via the hit grid, not pixel erase. Pixel erase cannot be represented in a vector model |
 | Undo / Redo | Command stack scoped to the current file, capped at ~100 entries, not persisted across reloads in Phase 2 |
 
+### The tool palette — Apple's PencilKit model
+
+**Decision: copy the structure and interaction model of Apple's tool picker** (`PKToolPicker`
+— the palette in Pages, Freeform, Notes, and Markup), trimmed to this product's tool set.
+
+This is not decoration. Three properties of that palette are exactly what a code reader
+needs, and each is a decision we would otherwise have to make badly ourselves:
+
+1. **It floats and docks.** It is a puck over the document, draggable to an edge, not a
+   band that permanently steals height from the page. §10 already calls for the toolbar to
+   collapse to a floating puck when a tool is active — this *is* that puck. The code stays
+   the centrepiece.
+2. **Attributes are progressive.** The palette shows tools and colours only. Width and
+   opacity live in a popover you get by tapping the **already-selected** tool. Nothing is
+   on screen until you ask for it, which is what the gist means by *quiet*.
+3. **Everyone already knows it.** The gist's flagship user is someone on an iPad with a
+   stylus. They have used this exact control. Zero learning cost is worth more than
+   originality here.
+
+#### Anatomy
+
+Left to right, matching the reference:
+
+```
+┌────────────────────────────────────────────────────────┐
+│  ↶ ↷ │  🖊 🖍 🧽  │  ● ● ● ● ◉  │  ⋯                   │
+│ undo  │   tools    │ colours+custom│ overflow           │
+└────────────────────────────────────────────────────────┘
+```
+
+| Region | Contents | Notes |
+|---|---|---|
+| Undo / redo | Two circular buttons | Always visible; the most-used controls on a tablet |
+| Tools | Pen, Highlighter, Eraser | The gist's list. Lasso and ruler are **not** ours — see §13 |
+| Colours | 5 swatches + 1 custom | Custom opens a wheel. Swatch row is per-tool: a highlighter remembers yellow while the pen remembers blue |
+| Overflow | `⋯` | Layers, Code Space toggle, export. Keeps the puck short on phones |
+
+#### Interaction rules (these are the ones that make it feel right)
+
+- **Selected tool rises.** The active tool translates up ~10px out of the tray, with a
+  spring, and its tip is tinted the current colour. This is the entire selection affordance
+   — no highlight box, no border.
+- **Tap the selected tool again → attributes popover.** Five discrete width steps rendered
+  as actual stroke marks (thin line → thick blob), not a slider with numbers; plus an
+  opacity slider drawn as a checkerboard-to-colour gradient with a circular thumb. Widths
+  are per-tool and remembered.
+- **Discrete widths, not continuous.** Five steps is a real usability decision, not a
+  shortcut: it makes the choice repeatable across sessions and thumb-sized on a tablet.
+- **Drag the puck to any edge to dock it**; double-tap or drag off-edge to collapse it to a
+  small pill that expands on tap. Position persists per source.
+- **Frosted background** (`backdrop-filter: blur()`), large corner radius, hairline border,
+  soft shadow. This is the one place in the app where material is allowed — everything else
+  stays flat per the gist's design rules.
+- **Never modal.** The palette never blocks scrolling, and tapping code while a tool is
+  active draws, it does not dismiss.
+
+#### Ink appearance per tool
+
+The palette is only half of it; Apple's tools also *render* distinctly. Match that:
+
+| Tool | Rendering |
+|---|---|
+| Pen | Opaque, pressure-varies width, `perfect-freehand` outline, round cap |
+| Highlighter | Translucent (~0.35 alpha), **multiply** blend, near-constant width, flat/chisel cap, and — critically — a text-range mode producing `kind: 'mark'` (§7 tool semantics) |
+| Eraser | Whole-stroke, with the erase radius previewed as a ring under the cursor |
+
+A **pencil** tool (grainy texture, pressure → opacity rather than width) is the obvious
+fourth and it suits a study tool. It is deferred to after Phase 2 ships: it needs a texture
+sampling pass that the other two do not, and it is pure upside, not a blocker.
+
+#### Where this lands in the schedule
+
+The palette is **Phase 2** work and ships with the ink engine. But build it as a **dumb
+presentational component in Phase 0's shell** — tool state in Zustand, no drawing wired up.
+It costs an afternoon, it makes the empty `/app` shell feel like the product, and it forces
+the tool/colour/width state shape to exist before the ink engine assumes one.
+
 ---
 
 ## 8. Source adapters
@@ -439,6 +518,8 @@ finished — only the phase immediately prior.
 - Annotation and Anchor types with `schemaVersion`, and the §5 resolution ladder **written
   and unit-tested now**, before anything depends on it.
 - Zustand store skeleton; Vitest and Playwright configured in CI.
+- The **tool palette as a presentational component** (§7) — tools, colours, width popover,
+  docking, all driven by Zustand, with no drawing behind it yet.
 
 **Done when:** the Actions deploy is green, the landing page is unchanged in production, and
 `/app` renders an empty shell.
@@ -475,7 +556,8 @@ code, close the tab, and come back to the same line.
 *This is the product.*
 
 - Three-surface canvas system (§7) bound to `view.scrollDOM`.
-- Pen, highlighter (both freehand and text-range), eraser, undo/redo.
+- Pen, highlighter (both freehand and text-range), eraser, undo/redo, wired to the Phase 0
+  palette (§7) — per-tool colour and width now actually change the ink.
 - Pointer/stylus pipeline: coalesced events, pressure, palm rejection, `touch-action`.
 - Ink persisted on stroke end, anchored per §5, culled per §9.
 - Displaced-notes tray for `unresolved` anchors.
@@ -565,6 +647,8 @@ Not "cut" — deferred with a reason, so they do not creep in early.
 | Collaborative editing | Explicitly not the product |
 | Multi-repo workspaces | Ambiguity in bookmarks and layers, no demonstrated need |
 | Per-pixel eraser | Incompatible with a vector annotation model |
+| Lasso / select, ruler, shape-snap | In Apple's palette, not in the gist's tool list. A ruler is for drawing; this product is for writing on code |
+| Pencil tool (grainy texture) | Wants a texture pass the pen and highlighter don't need. Additive after Phase 2, not a blocker |
 | Anything with a "Run" button | Forbidden by the gist |
 
 ---
@@ -589,11 +673,13 @@ Not "cut" — deferred with a reason, so they do not creep in early.
 2. **Cloud backend for Phase 6.** You have a Supabase connector configured on this machine —
    is Supabase the intended backend? It would give auth, Postgres, and row-level security
    for sharing in one move.
-3. **App location.** `/app` on the same domain (assumed above), or `app.annotatecode.com`?
+3. ~~**App location.**~~ **Answered: `/app` on annotatecode.com.** Built as a Vite
+   multi-page app; the landing page stays static and is verified byte-identical by the
+   deploy workflow.
 4. **Edited GitHub files.** Local edits to a fetched repo are overlays that can never be
    pushed back. Keep them, or make GitHub sources strictly read-only to avoid the dead end?
-5. **Landing page buttons.** They currently `alert()`. Wire them to `/app` in Phase 0, or
-   leave the mockup until Phase 1 has something to open?
+5. ~~**Landing page buttons.**~~ **Answered: wired in Phase 0.** "Open a codebase" links to
+   `/app/`; "Paste a GitHub URL" passes the URL as `?repo=`, which Phase 1 will read.
 
 ---
 
@@ -608,6 +694,7 @@ Not "cut" — deferred with a reason, so they do not creep in early.
 6. Write `src/model/anchor.ts` — the §5 ladder — and `anchor.test.ts` before it.
 7. Write `src/db/index.ts` — stores, indexes, migrations.
 8. Empty `/app` shell: toolbar, collapsible sidebar, empty centre pane.
+9. `src/ui/ToolPalette/` — the §7 palette, presentational, state in Zustand.
 
 ---
 

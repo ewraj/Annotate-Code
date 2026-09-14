@@ -1,0 +1,72 @@
+name: Deploy to GitHub Pages
+
+# Pages served this repository's root directory as static files until there was a build
+# step. Now that there is one, the site is built here and uploaded as an artifact — which
+# means the Pages source must be set to "GitHub Actions" in the repository settings, or
+# this workflow deploys nothing.
+#
+# CNAME and 404.html are emitted into dist/ by a small Vite plugin (see vite.config.ts),
+# so the custom domain and SPA deep links survive every deploy.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never cancel a deploy that is already running; queue behind it instead.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify the deploy artifact
+        # A missing CNAME silently drops the custom domain, and a missing landing page is
+        # the one regression nobody would notice until someone visits the site.
+        run: |
+          test -f dist/CNAME || { echo "::error::dist/CNAME missing — custom domain would drop"; exit 1; }
+          test -f dist/index.html || { echo "::error::dist/index.html missing — landing page gone"; exit 1; }
+          test -f dist/app/index.html || { echo "::error::dist/app/index.html missing — app shell gone"; exit 1; }
+          test -f dist/404.html || { echo "::error::dist/404.html missing — SPA deep links would 404"; exit 1; }
+          grep -q "Read code. Annotate it." dist/index.html || { echo "::error::dist/index.html is not the landing page"; exit 1; }
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
