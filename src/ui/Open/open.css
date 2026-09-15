@@ -1,0 +1,200 @@
+.ac-open {
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.ac-open-inner {
+  width: 100%;
+  max-width: 520px;
+  padding: clamp(48px, 12vh, 110px) 24px 80px;
+}
+
+.ac-open h1 {
+  margin: 0 0 22px;
+  font-size: 27px;
+  font-weight: 650;
+  letter-spacing: -1px;
+}
+
+.ac-open-form {
+  display: flex;
+  gap: 8px;
+}
+
+.ac-open-form input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 13px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 14px;
+  color: #171717;
+  background: #fff;
+}
+
+.ac-open-form input:focus {
+  outline: none;
+  border-color: #999;
+}
+
+.ac-primary {
+  height: 44px;
+  padding: 0 19px;
+  border: 1px solid #111;
+  border-radius: 7px;
+  background: #111;
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ac-primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ac-open-aside {
+  margin: 13px 0 0;
+  color: #999;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ac-link {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: #666;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.ac-link:hover {
+  color: #111;
+}
+
+/* The folder input is driven by its label; it never shows itself. */
+.ac-link input[type='file'] {
+  display: none;
+}
+
+.ac-open-error {
+  margin-top: 18px;
+  padding: 13px 15px;
+  border: 1px solid #f0d8dc;
+  border-radius: 8px;
+  background: #fdf7f8;
+  font-size: 13px;
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ac-open-error strong {
+  color: #a33a4a;
+  font-weight: 600;
+}
+
+.ac-open-error span {
+  color: #8a6b70;
+}
+
+/* ---- recents ----------------------------------------------------------- */
+
+.ac-recents {
+  margin-top: 46px;
+}
+
+.ac-recents h2 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #aaa;
+}
+
+.ac-recents ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid #f0f0f0;
+}
+
+.ac-recents li {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ac-recent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 13px 4px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ac-recent:hover .ac-recent-name {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ac-recent-name {
+  font-size: 14px;
+  color: #171717;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ac-recent-meta {
+  margin-left: auto;
+  flex: none;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.ac-forget {
+  flex: none;
+  width: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  color: #ccc;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.ac-recents li:hover .ac-forget,
+.ac-forget:focus-visible {
+  opacity: 1;
+}
+
+.ac-forget:hover {
+  color: #a33a4a;
+}
+
+.ac-forget svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}

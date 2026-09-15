@@ -37,14 +37,21 @@ function isWeakLine(trimmed: string): boolean {
  * tampering. It is a few nanoseconds per line, which matters when a 5,000-line file is
  * rehashed on every open.
  */
-export function hashLine(text: string): string {
+export function hashText(text: string): string {
   let h = 0x811c9dc5;
-  const s = text.trim();
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
     h = Math.imul(h, 0x01000193);
   }
   return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+/**
+ * The same hash over a line's *trimmed* text, so that reindenting a file does not orphan
+ * every annotation in it.
+ */
+export function hashLine(text: string): string {
+  return hashText(text.trim());
 }
 
 /** Split source text into lines the way every function here expects. */

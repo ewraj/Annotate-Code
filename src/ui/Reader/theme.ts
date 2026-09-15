@@ -1,0 +1,102 @@
+/**
+ * How code looks.
+ *
+ * The gist asks for a document, not an IDE: white paper, dark text, a quiet gutter, and
+ * very little colour. Syntax highlighting here is closer to a well-set printed listing
+ * than to a neon editor theme — enough contrast between kinds of token to help you read,
+ * never enough to compete with the ink someone writes on top of it.
+ *
+ * Generous line height is not a style choice either. Annotations need room between lines,
+ * and Code Space in Phase 5 will expand this band further.
+ */
+
+import { HighlightStyle } from '@codemirror/language';
+import { EditorView } from '@codemirror/view';
+import { tags as t } from '@lezer/highlight';
+
+export const paperTheme = EditorView.theme({
+  '&': {
+    height: '100%',
+    fontSize: '13px',
+    color: '#171717',
+    backgroundColor: '#fff',
+  },
+  '.cm-scroller': {
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+    lineHeight: '1.75',
+    overflow: 'auto',
+  },
+  '.cm-content': {
+    padding: '18px 0 45vh',
+    caretColor: '#171717',
+  },
+  // Trailing space below the last line, so the end of a file is annotatable too.
+  '.cm-gutters': {
+    backgroundColor: '#fff',
+    color: '#c2c2c2',
+    border: 'none',
+    paddingRight: '10px',
+    userSelect: 'none',
+  },
+  '.cm-lineNumbers .cm-gutterElement': {
+    padding: '0 3px 0 18px',
+    minWidth: '52px',
+  },
+  '.cm-foldGutter .cm-gutterElement': {
+    padding: '0 2px',
+    color: '#d4d4d4',
+  },
+  '.cm-activeLine': { backgroundColor: '#fafafa' },
+  '.cm-activeLineGutter': { backgroundColor: 'transparent', color: '#8a8a8a' },
+  '.cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection': {
+    backgroundColor: '#dbe6fb',
+  },
+  '.cm-searchMatch': { backgroundColor: '#fdf0c2', outline: 'none' },
+  '.cm-searchMatch.cm-searchMatch-selected': { backgroundColor: '#ffdb4d' },
+  '.cm-selectionMatch': { backgroundColor: '#f0f0f0' },
+  '.cm-matchingBracket, &.cm-focused .cm-matchingBracket': {
+    backgroundColor: '#eef2fb',
+    outline: '1px solid #cbd8f0',
+  },
+  '.cm-panels': {
+    backgroundColor: '#fafafa',
+    color: '#333',
+    borderBottom: '1px solid #eee',
+  },
+  '.cm-panel input': {
+    font: 'inherit',
+    padding: '3px 6px',
+    border: '1px solid #ddd',
+    borderRadius: '5px',
+  },
+});
+
+export const paperHighlight = HighlightStyle.define([
+  { tag: [t.comment, t.lineComment, t.blockComment, t.docComment], color: '#9a9a9a', fontStyle: 'italic' },
+
+  { tag: [t.keyword, t.moduleKeyword, t.controlKeyword], color: '#8250a8' },
+  { tag: [t.operatorKeyword, t.modifier, t.self, t.null, t.atom, t.bool], color: '#8250a8' },
+
+  { tag: [t.string, t.special(t.string), t.regexp], color: '#2f7a4d' },
+  { tag: [t.number, t.integer, t.float], color: '#b05f1e' },
+
+  { tag: [t.function(t.variableName), t.function(t.propertyName)], color: '#2f5fd0' },
+  { tag: [t.definition(t.variableName), t.definition(t.propertyName)], color: '#171717' },
+
+  { tag: [t.typeName, t.className, t.namespace], color: '#1f6a8c' },
+  { tag: [t.tagName], color: '#2f5fd0' },
+  { tag: [t.attributeName], color: '#1f6a8c' },
+  { tag: [t.propertyName], color: '#3a3a3a' },
+
+  { tag: [t.variableName, t.labelName], color: '#171717' },
+  { tag: [t.operator, t.punctuation, t.separator, t.bracket], color: '#8a8a8a' },
+  { tag: [t.meta, t.processingInstruction], color: '#9a9a9a' },
+
+  { tag: t.link, color: '#2f5fd0', textDecoration: 'underline' },
+  { tag: t.heading, color: '#171717', fontWeight: '650' },
+  { tag: t.emphasis, fontStyle: 'italic' },
+  { tag: t.strong, fontWeight: '650' },
+  { tag: t.strikethrough, textDecoration: 'line-through' },
+
+  { tag: t.invalid, color: '#d1495b' },
+]);

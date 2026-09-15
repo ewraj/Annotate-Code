@@ -58,6 +58,47 @@ body {
   text-overflow: ellipsis;
 }
 
+/* The open codebase, which is also the way back out of it. */
+.ac-source {
+  flex: none;
+  max-width: 240px;
+  padding: 4px 8px;
+  margin-left: -4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: #444;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ac-source:hover {
+  background: #f4f4f4;
+  color: #111;
+}
+
+.ac-lang {
+  color: #bbb;
+  font-size: 12px;
+}
+
+/* CodeMirror owns the scroller — one scrolling element, so ink and code can share it. */
+.ac-codeview {
+  height: 100%;
+}
+
+.ac-codeview .cm-editor {
+  height: 100%;
+}
+
+.ac-codeview .cm-editor.cm-focused {
+  outline: none;
+}
+
 .ac-toolbar-right {
   margin-left: auto;
   display: flex;

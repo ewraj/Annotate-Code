@@ -270,6 +270,21 @@ export async function getReadingPosition(fileId: string): Promise<ReadingPositio
   return (await db()).get('readingPositions', fileId);
 }
 
+/**
+ * The file this source was last read in. Resolved through the by-source index rather than
+ * by asking about every file — a 5,000-file repository must not cost 5,000 lookups just
+ * to work out where to land.
+ */
+export async function latestReadingPosition(
+  sourceId: string,
+): Promise<ReadingPosition | undefined> {
+  const all = await (await db()).getAllFromIndex('readingPositions', 'by-source', sourceId);
+  return all.reduce<ReadingPosition | undefined>(
+    (best, p) => (!best || p.updatedAt > best.updatedAt ? p : best),
+    undefined,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // File System Access handles
 // ---------------------------------------------------------------------------
