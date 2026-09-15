@@ -1,21 +1,64 @@
 /**
  * The application shell.
  *
- * Phase 0: the frame, and nothing behind it. The file tree is empty, the centre pane has
- * no document, and the palette draws nothing. What this does establish is the layout the
- * rest of the phases fill in — toolbar across the top, collapsible tree on the left, and
- * the document occupying everything else, because the code is the centrepiece and should
- * not be surrounded by UI.
+ * Toolbar across the top, collapsible tree on the left, document everywhere else. The
+ * code is the centrepiece and is deliberately not surrounded by UI — every control that
+ * is not needed to read is either in the toolbar or in the floating palette.
+ *
+ * Phase 2 mounts the ink surfaces onto the scroller `CodeView` hands back.
  */
 
-import { useState } from 'react';
-import { ToolPalette } from '@/ui/ToolPalette/ToolPalette';
+import { useEffect, useState } from 'react';
 import { isInkTool, usePalette } from '@/store/palette';
+import { useSession } from '@/store/session';
+import { FileTree } from '@/ui/FileTree/FileTree';
+import { OpenScreen } from '@/ui/Open/OpenScreen';
+import { CodeView } from '@/ui/Reader/CodeView';
+import { languageName } from '@/ui/Reader/language';
+import { ToolPalette } from '@/ui/ToolPalette/ToolPalette';
 
 export function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const status = useSession((s) => s.status);
+  const source = useSession((s) => s.source);
+  const activeFile = useSession((s) => s.activeFile);
+  const content = useSession((s) => s.content);
+  const fileError = useSession((s) => s.fileError);
+  const loadingFile = useSession((s) => s.loadingFile);
+  const pendingLine = useSession((s) => s.pendingLine);
+  const consumePendingLine = useSession((s) => s.consumePendingLine);
+  const rememberLine = useSession((s) => s.rememberLine);
+  const close = useSession((s) => s.close);
+
   const activeTool = usePalette((s) => s.activeTool);
   const clearTool = usePalette((s) => s.clearTool);
+
+  // Escape disarms the current tool — the fastest way back to plain reading.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && usePalette.getState().activeTool) clearTool();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [clearTool]);
+
+  if (status !== 'ready' || !source) {
+    return (
+      <div className="ac-app">
+        <header className="ac-toolbar">
+          <a className="ac-wordmark" href="/">
+            AnnotateCode
+          </a>
+        </header>
+        <div className="ac-body">
+          <main className="ac-document">
+            <OpenScreen />
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="ac-app">
@@ -33,15 +76,16 @@ export function App() {
           </svg>
         </button>
 
-        <a className="ac-wordmark" href="/">
-          AnnotateCode
-        </a>
+        <button type="button" className="ac-source" onClick={close} title="Open something else">
+          {source.name}
+        </button>
 
         <span className="ac-path" aria-live="polite">
-          No codebase open
+          {activeFile ? activeFile.path : 'Pick a file'}
         </span>
 
         <div className="ac-toolbar-right">
+          {activeFile && <span className="ac-lang">{languageName(activeFile.path) ?? 'Text'}</span>}
           <button
             type="button"
             className={`ac-mode ${activeTool ? '' : 'is-active'}`}
@@ -50,34 +94,34 @@ export function App() {
           >
             Read
           </button>
-          <span className="ac-mode-hint">
-            {activeTool
-              ? `${activeTool[0]!.toUpperCase()}${activeTool.slice(1)} armed`
-              : 'Pick a tool to annotate'}
-          </span>
         </div>
       </header>
 
       <div className="ac-body">
         <aside className={`ac-sidebar ${sidebarOpen ? '' : 'is-collapsed'}`} aria-label="Files">
-          <div className="ac-empty">
-            <p>No files yet.</p>
-            <p className="ac-muted">
-              Opening a codebase arrives in Phase&nbsp;1 — a GitHub URL, or a folder from
-              this machine.
-            </p>
-          </div>
+          <FileTree />
         </aside>
 
         <main className={`ac-document ${activeTool && isInkTool(activeTool) ? 'is-armed' : ''}`}>
-          <div className="ac-empty ac-empty-center">
-            <p className="ac-empty-title">Read code. Annotate it. That's it.</p>
-            <p className="ac-muted">
-              This is the shell. The reader lands in Phase&nbsp;1, ink in Phase&nbsp;2.
-              <br />
-              The palette below is real — pick a tool, tap it again for size and opacity.
-            </p>
-          </div>
+          {fileError ? (
+            <div className="ac-empty ac-empty-center">
+              <p className="ac-empty-title">{fileError.message}</p>
+              {fileError.hint && <p className="ac-muted">{fileError.hint}</p>}
+            </div>
+          ) : content !== null && activeFile ? (
+            <CodeView
+              fileId={activeFile.id}
+              path={activeFile.path}
+              text={content}
+              initialLine={pendingLine}
+              onInitialLineUsed={consumePendingLine}
+              onLineChange={rememberLine}
+            />
+          ) : (
+            <div className="ac-empty ac-empty-center">
+              <p className="ac-muted">{loadingFile ? 'Opening…' : 'Choose a file to start reading.'}</p>
+            </div>
+          )}
         </main>
       </div>
 

@@ -1,0 +1,103 @@
+.ac-tree {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ac-tree-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 6px 0;
+}
+
+/* Holds the full scroll height while only a window of rows exists in the DOM. */
+.ac-tree-sizer {
+  position: relative;
+}
+
+.ac-tree-window {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  will-change: transform;
+}
+
+.ac-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  height: 24px;
+  padding-right: 10px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: #3f3f3f;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ac-row:hover {
+  background: #f1f1f1;
+}
+
+.ac-row.dir {
+  color: #262626;
+}
+
+.ac-row.is-active {
+  background: #ececec;
+  color: #111;
+  font-weight: 550;
+}
+
+.ac-row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ac-caret {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  fill: none;
+  stroke: #9a9a9a;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.12s ease;
+}
+
+.ac-caret.is-open {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ac-caret {
+    transition: none;
+  }
+}
+
+/* What import chose not to show, stated once rather than hidden. */
+.ac-tree-notes {
+  flex: none;
+  padding: 9px 12px;
+  border-top: 1px solid #eee;
+  color: #a0a0a0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.ac-tree-notes p {
+  margin: 0 0 4px;
+}
+
+.ac-tree-notes p:last-child {
+  margin-bottom: 0;
+}
