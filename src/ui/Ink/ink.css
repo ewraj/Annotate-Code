@@ -1,0 +1,110 @@
+/*
+ * The ink surfaces sit over the editor box, which does not scroll. They are viewport-sized;
+ * the strokes on them are repositioned each frame from CodeMirror's own geometry.
+ */
+
+.ac-ink-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  /* Reading is the default. Nothing here intercepts a pointer until a tool is armed. */
+  pointer-events: none;
+}
+
+.ac-ink {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+/* Highlighter ink darkens the code under it rather than covering it. This has to be an
+   element blend mode — a `multiply` inside a canvas blends only against that canvas. */
+.ac-ink-highlighter,
+.ac-ink-wet.is-highlighter {
+  mix-blend-mode: multiply;
+}
+
+.ac-ink-layer.is-armed .ac-ink-wet {
+  pointer-events: auto;
+  /* The browser must not scroll the document out from under a stroke. One-finger scrolling
+     is handled by hand in InkSurface for the pointers that are not drawing. */
+  touch-action: none;
+}
+
+/* ---- displaced notes ---------------------------------------------------- */
+
+.ac-displaced {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 20;
+  width: 300px;
+  max-height: 46%;
+  overflow-y: auto;
+  padding: 12px 13px;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+}
+
+.ac-displaced-title {
+  margin: 0 0 3px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ac-displaced-hint {
+  margin: 0 0 10px;
+  color: #8a8a8a;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ac-displaced-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ac-displaced-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px solid #f2f2f2;
+  font-size: 12px;
+}
+
+.ac-displaced-line {
+  flex: none;
+  color: #a0a0a0;
+  font-variant-numeric: tabular-nums;
+}
+
+.ac-displaced-code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: #555;
+}
+
+.ac-displaced-list button {
+  flex: none;
+  padding: 2px 7px;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  background: #fff;
+  font: inherit;
+  font-size: 11px;
+  color: #666;
+  cursor: pointer;
+}
+
+.ac-displaced-list button:hover {
+  border-color: #d1495b;
+  color: #d1495b;
+}

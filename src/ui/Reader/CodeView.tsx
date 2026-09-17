@@ -1,9 +1,9 @@
 /**
  * The reader.
  *
- * CodeMirror 6 in read-only mode. Phase 3 turns editing on; Phase 2 mounts the ink
- * surfaces over `view.scrollDOM`, which is why this component hands that element out
- * rather than hiding it.
+ * CodeMirror 6 in read-only mode. Phase 3 turns editing on. The ink surfaces mount over the
+ * editor and position themselves from its geometry, which is why this component hands the
+ * whole `EditorView` out rather than keeping it to itself.
  *
  * Two things here are load-bearing for later phases and should not be casually changed:
  *
@@ -39,8 +39,12 @@ interface Props {
   initialLine: number | null;
   onInitialLineUsed: () => void;
   onLineChange: (line: number) => void;
-  /** Handed to Phase 2 so the ink canvases can be mounted over the right element. */
-  onScrollerReady?: (scroller: HTMLElement | null) => void;
+  /**
+   * The editor itself, handed out so the ink layer can ask it where lines are. It needs more
+   * than the scroll element: `posAtCoords` to pick an anchor line, `lineBlockAt` for line
+   * geometry, and `requestMeasure` to paint inside the same measure phase as the text.
+   */
+  onViewReady?: (view: EditorView | null) => void;
 }
 
 const language = new Compartment();
@@ -76,14 +80,14 @@ export function CodeView({
   initialLine,
   onInitialLineUsed,
   onLineChange,
-  onScrollerReady,
+  onViewReady,
 }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
 
   // Callbacks are read through a ref so that changing one never tears down the editor.
-  const handlers = useRef({ onLineChange, onInitialLineUsed, onScrollerReady });
-  handlers.current = { onLineChange, onInitialLineUsed, onScrollerReady };
+  const handlers = useRef({ onLineChange, onInitialLineUsed, onViewReady });
+  handlers.current = { onLineChange, onInitialLineUsed, onViewReady };
 
   // One editor for the life of the component; the document is swapped below.
   useEffect(() => {
@@ -94,7 +98,7 @@ export function CodeView({
       parent: host.current,
     });
     view.current = editor;
-    handlers.current.onScrollerReady?.(editor.scrollDOM);
+    handlers.current.onViewReady?.(editor);
 
     // The line at the top of the viewport *is* the reading position. Asked of the editor
     // in viewport coordinates rather than computed from scrollTop, so content padding,
@@ -108,7 +112,7 @@ export function CodeView({
 
     return () => {
       editor.scrollDOM.removeEventListener('scroll', report);
-      handlers.current.onScrollerReady?.(null);
+      handlers.current.onViewReady?.(null);
       editor.destroy();
       view.current = null;
     };
