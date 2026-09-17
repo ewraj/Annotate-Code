@@ -22,6 +22,7 @@ import {
   SourceError,
   type SourceAdapter,
 } from '@/sources';
+import { useInk } from '@/store/ink';
 import { ancestorsOf, buildTree, initialExpanded, type TreeNode } from '@/ui/FileTree/tree';
 
 export interface Failure {
@@ -54,6 +55,13 @@ interface SessionState {
   content: string | null;
   fileError: Failure | null;
   loadingFile: boolean;
+
+  /** Reading or editing. Not persisted: a file opens read-only every time. */
+  mode: 'read' | 'edit';
+  /** Unsaved changes in the open file. */
+  dirty: boolean;
+  saving: boolean;
+  saveError: Failure | null;
   /** Line to scroll to once the document is rendered; cleared when consumed. */
   pendingLine: number | null;
 
@@ -67,6 +75,10 @@ interface SessionState {
   forget: (sourceId: string) => Promise<void>;
   close: () => void;
   dismissError: () => void;
+
+  setMode: (mode: 'read' | 'edit') => void;
+  edit: (text: string) => void;
+  save: () => Promise<void>;
 
   toggleDirectory: (path: string) => void;
   openFile: (fileId: string) => Promise<void>;
@@ -138,6 +150,10 @@ export const useSession = create<SessionState>()((set, get) => {
     fileError: null,
     loadingFile: false,
     pendingLine: null,
+    mode: 'read',
+    dirty: false,
+    saving: false,
+    saveError: null,
     recents: [],
 
     loadRecents: async () => {
@@ -174,6 +190,46 @@ export const useSession = create<SessionState>()((set, get) => {
 
     dismissError: () => set({ error: null }),
 
+    setMode: (mode) => set({ mode, saveError: null }),
+
+    edit: (text) => set({ content: text, dirty: true }),
+
+    /**
+     * Write the open file back through its adapter.
+     *
+     * Annotations are re-anchored against the saved text, not before it: if the write fails
+     * the anchors still describe a file that exists. During the session the strokes have
+     * already been carried along by mapping through CodeMirror's change set, so this is
+     * recording where they ended up rather than working it out.
+     */
+    save: async () => {
+      const { adapter, activeFile, content, dirty, saving } = get();
+      if (!adapter?.writeFile || !activeFile || content === null || !dirty || saving) return;
+
+      set({ saving: true, saveError: null });
+
+      try {
+        await adapter.writeFile(activeFile.id, content);
+      } catch (error) {
+        set({ saving: false, saveError: asFailure(error) });
+        return;
+      }
+
+      // A GitHub blob or an uploaded snapshot has nowhere to write back to, so the edit
+      // stays a local overlay and the file is marked as diverging from upstream.
+      const edited = !adapter.writeFile || activeFile.edited || get().source?.kind !== 'local-fs';
+      const updated: FileEntry = { ...activeFile, edited, size: content.length, updatedAt: Date.now() };
+
+      set((state) => ({
+        saving: false,
+        dirty: false,
+        activeFile: state.activeFile?.id === updated.id ? updated : state.activeFile,
+        files: state.files.map((f) => (f.id === updated.id ? updated : f)),
+      }));
+
+      await useInk.getState().reanchor(content);
+    },
+
     toggleDirectory: (path) =>
       set((s) => {
         const next = new Set(s.expanded);
@@ -194,6 +250,8 @@ export const useSession = create<SessionState>()((set, get) => {
         content: null,
         fileError: null,
         loadingFile: true,
+        dirty: false,
+        saveError: null,
         // Reveal the file in the tree, so "where am I" is never a question.
         expanded: new Set([...get().expanded, ...ancestorsOf(file.path)]),
       });
@@ -207,7 +265,13 @@ export const useSession = create<SessionState>()((set, get) => {
         // A slower read for a file the user has since navigated away from must not win.
         if (get().activeFile?.id !== fileId) return;
 
-        set({ content: text, loadingFile: false, pendingLine: position?.line ?? null });
+        set({
+          content: text,
+          loadingFile: false,
+          pendingLine: position?.line ?? null,
+          dirty: false,
+          saveError: null,
+        });
       } catch (error) {
         if (get().activeFile?.id !== fileId) return;
         set({ content: null, loadingFile: false, fileError: asFailure(error) });

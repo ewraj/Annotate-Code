@@ -1,7 +1,7 @@
 /**
  * The reader.
  *
- * CodeMirror 6 in read-only mode. Phase 3 turns editing on. The ink surfaces mount over the
+ * CodeMirror 6, read-only until edit mode is turned on. The ink surfaces mount over the
  * editor and position themselves from its geometry, which is why this component hands the
  * whole `EditorView` out rather than keeping it to itself.
  *
@@ -21,6 +21,7 @@ import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/sea
 import { Compartment, EditorState, type Extension } from '@codemirror/state';
 import {
   EditorView,
+  type ViewUpdate,
   drawSelection,
   highlightActiveLine,
   highlightActiveLineGutter,
@@ -45,9 +46,25 @@ interface Props {
    * geometry, and `requestMeasure` to paint inside the same measure phase as the text.
    */
   onViewReady?: (view: EditorView | null) => void;
+  /** Phase 3: false keeps the document read-only. */
+  editable: boolean;
+  /**
+   * The user changed the text. Carries the update so callers can map positions — the ink
+   * layer moves its strokes by running its lines through `update.changes`.
+   */
+  onDocChange?: (text: string, update: ViewUpdate) => void;
 }
 
 const language = new Compartment();
+const writable = new Compartment();
+
+/**
+ * Note `readOnly`, not just `editable`: the document stays focusable and selectable while
+ * locked, which is the point of treating code as a document rather than a form field.
+ */
+function readingMode(): Extension[] {
+  return [EditorState.readOnly.of(true), EditorView.editable.of(false)];
+}
 
 function baseExtensions(): Extension[] {
   return [
@@ -62,10 +79,6 @@ function baseExtensions(): Extension[] {
     search({ top: true }),
     syntaxHighlighting(paperHighlight, { fallback: true }),
     indentUnit.of('  '),
-    // Reading, not editing — for now. Note `readOnly`, not `editable`: the document stays
-    // focusable and selectable, which is the point of treating code as a document.
-    EditorState.readOnly.of(true),
-    EditorView.editable.of(false),
     // No line wrapping: the gist asks for horizontal scrolling, and wrapped code would
     // also make ink anchored to a line ambiguous about which visual row it belongs to.
     keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
@@ -81,20 +94,39 @@ export function CodeView({
   onInitialLineUsed,
   onLineChange,
   onViewReady,
+  editable,
+  onDocChange,
 }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
 
   // Callbacks are read through a ref so that changing one never tears down the editor.
-  const handlers = useRef({ onLineChange, onInitialLineUsed, onViewReady });
-  handlers.current = { onLineChange, onInitialLineUsed, onViewReady };
+  const handlers = useRef({ onLineChange, onInitialLineUsed, onViewReady, onDocChange });
+  handlers.current = { onLineChange, onInitialLineUsed, onViewReady, onDocChange };
+
+  // The editor owns the text while a file is open, so the `text` prop is a seed rather than
+  // a binding. Reading it through a ref keeps a keystroke from round-tripping through the
+  // store and back into a document swap that would reset the cursor.
+  const seed = useRef(text);
+  seed.current = text;
 
   // One editor for the life of the component; the document is swapped below.
   useEffect(() => {
     if (!host.current) return;
 
     const editor = new EditorView({
-      state: EditorState.create({ doc: '', extensions: [...baseExtensions(), language.of([])] }),
+      state: EditorState.create({
+        doc: '',
+        extensions: [
+          ...baseExtensions(),
+          language.of([]),
+          writable.of(readingMode()),
+          EditorView.updateListener.of((update) => {
+            if (!update.docChanged) return;
+            handlers.current.onDocChange?.(update.state.doc.toString(), update);
+          }),
+        ],
+      }),
       parent: host.current,
     });
     view.current = editor;
@@ -124,7 +156,7 @@ export function CodeView({
     if (!editor) return;
 
     editor.dispatch({
-      changes: { from: 0, to: editor.state.doc.length, insert: text },
+      changes: { from: 0, to: editor.state.doc.length, insert: seed.current },
       selection: { anchor: 0 },
       scrollIntoView: false,
     });
@@ -140,7 +172,15 @@ export function CodeView({
     return () => {
       cancelled = true;
     };
-  }, [fileId, path, text]);
+    // Not keyed on `text`: see `seed` above.
+  }, [fileId, path]);
+
+  // Turn editing on and off without rebuilding the editor.
+  useEffect(() => {
+    view.current?.dispatch({
+      effects: writable.reconfigure(editable ? [] : readingMode()),
+    });
+  }, [editable]);
 
   // Restore the reading position, after the document is in place.
   useEffect(() => {

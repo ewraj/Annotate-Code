@@ -122,3 +122,25 @@ export async function eraseStrokes(ids: string[]): Promise<void> {
 export async function restoreStrokes(annotations: Annotation[]): Promise<void> {
   await Promise.all(annotations.map((a) => putAnnotation(a)));
 }
+
+/**
+ * Recapture every anchor against the text as it now stands.
+ *
+ * Called after a save, and deliberately not by walking the resolution ladder: during the
+ * session the strokes were already carried to their new lines by mapping through
+ * CodeMirror's own change set, which knows exactly what moved where. The ladder exists for
+ * the case where that record is gone — a file edited somewhere else, between sessions. Using
+ * it here would be throwing away better information in favour of a guess.
+ */
+export async function reanchorStrokes(placed: Placed[], text: string): Promise<Placed[]> {
+  const lines = toLines(text);
+  const now = Date.now();
+
+  const updated = placed.map((p) => ({
+    ...p,
+    annotation: { ...p.annotation, anchor: createAnchor(lines, p.line), updatedAt: now },
+  }));
+
+  await Promise.all(updated.map((p) => putAnnotation(p.annotation)));
+  return updated;
+}

@@ -65,6 +65,33 @@ class CachingAdapter implements SourceAdapter {
     }
     return text;
   }
+
+  /**
+   * Save an edit.
+   *
+   * Two outcomes, and the difference is recorded rather than hidden. When the inner adapter
+   * can write back — a picked folder — the file on disk changes and there is nothing left
+   * to diverge, so `edited` stays false. When it cannot, the edit lives here as a local
+   * overlay on top of whatever upstream still says, and `edited` marks it as such. A GitHub
+   * source is always the second case: the gist forbids commits, so an edit to a fetched blob
+   * can never travel back and the user should be able to see that.
+   */
+  async writeFile(id: string, text: string): Promise<void> {
+    const wroteThrough = Boolean(this.inner.writeFile);
+    if (this.inner.writeFile) await this.inner.writeFile(id, text);
+
+    const stored = await getFile(id);
+    if (!stored) return;
+
+    await putFile({
+      ...stored,
+      content: text,
+      contentHash: hashText(text),
+      edited: !wroteThrough,
+      size: text.length,
+      updatedAt: Date.now(),
+    });
+  }
 }
 
 /**
@@ -90,6 +117,20 @@ class StoredAdapter implements SourceAdapter {
       'This file was never opened, and the folder is no longer connected.',
       'Open the folder again to read the rest of it.',
     );
+  }
+
+  /** Nothing to write back to, so an edit can only ever be a local overlay. */
+  async writeFile(id: string, text: string): Promise<void> {
+    const stored = await getFile(id);
+    if (!stored) return;
+    await putFile({
+      ...stored,
+      content: text,
+      contentHash: hashText(text),
+      edited: true,
+      size: text.length,
+      updatedAt: Date.now(),
+    });
   }
 }
 

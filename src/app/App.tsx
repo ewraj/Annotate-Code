@@ -5,12 +5,15 @@
  * code is the centrepiece and is deliberately not surrounded by UI — every control that
  * is not needed to read is either in the toolbar or in the floating palette.
  *
- * Phase 2 mounts the ink surfaces onto the scroller `CodeView` hands back.
+ * The ink surfaces mount over the reader; the mode toggle decides whether the text itself
+ * can be changed. A tool being armed always wins over edit mode — while you are holding a
+ * pen, the keyboard should not be typing into the document underneath it.
  */
 
-import { useEffect, useState } from 'react';
-import type { EditorView } from '@codemirror/view';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { EditorView, ViewUpdate } from '@codemirror/view';
 import { isInkTool, usePalette } from '@/store/palette';
+import { lineMapper } from '@/ink/reflow';
 import { useInk } from '@/store/ink';
 import { useSession } from '@/store/session';
 import { FileTree } from '@/ui/FileTree/FileTree';
@@ -32,6 +35,13 @@ export function App() {
   const fileError = useSession((s) => s.fileError);
   const loadingFile = useSession((s) => s.loadingFile);
   const pendingLine = useSession((s) => s.pendingLine);
+  const mode = useSession((s) => s.mode);
+  const dirty = useSession((s) => s.dirty);
+  const saving = useSession((s) => s.saving);
+  const saveError = useSession((s) => s.saveError);
+  const setMode = useSession((s) => s.setMode);
+  const edit = useSession((s) => s.edit);
+  const save = useSession((s) => s.save);
   const consumePendingLine = useSession((s) => s.consumePendingLine);
   const rememberLine = useSession((s) => s.rememberLine);
   const close = useSession((s) => s.close);
@@ -47,14 +57,40 @@ export function App() {
   const canRedo = useInk((s) => s.stacks.redo.length > 0);
 
   // Load this file's annotations, and resolve them against the text as it stands now.
+  //
+  // Once per file, not once per keystroke: `content` changes on every edit, and reloading
+  // from the database mid-session would throw away strokes that have been moved to follow
+  // the text but not yet saved.
   const fileId = activeFile?.id ?? null;
+  const loadedFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!fileId || content === null || !source) {
+    if (!fileId || !source) {
       closeInk();
+      loadedFor.current = null;
       return;
     }
+    if (content === null || loadedFor.current === fileId) return;
+    loadedFor.current = fileId;
     void openInk(fileId, source.id, content);
   }, [fileId, content, source, openInk, closeInk]);
+
+  /**
+   * Carry the ink across an edit.
+   *
+   * Each stroke's line is mapped through CodeMirror's own change set rather than guessed at.
+   * Type a line above a stroke and it moves down by exactly one line, in the same frame the
+   * text does — no re-resolution, no drift, nothing to reconcile afterwards.
+   */
+  const onDocChange = useCallback(
+    (text: string, update: ViewUpdate) => {
+      edit(text);
+
+      useInk
+        .getState()
+        .shift(lineMapper(update.startState.doc, update.state.doc, update.changes));
+    },
+    [edit],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -64,12 +100,21 @@ export function App() {
         return;
       }
 
-      // Undo/redo belong to the ink while a tool is armed; CodeMirror's own history has
-      // nothing to undo in a read-only document anyway.
       const accel = e.metaKey || e.ctrlKey;
-      if (accel && e.key.toLowerCase() === 'z') {
+      if (accel && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        void (e.shiftKey ? useInk.getState().redo() : useInk.getState().undo());
+        void useSession.getState().save();
+        return;
+      }
+
+      // Undo/redo belong to the ink whenever there is ink to undo. In edit mode with a clean
+      // stack it falls through to CodeMirror's own history, which owns the text.
+      if (accel && e.key.toLowerCase() === 'z') {
+        const ink = useInk.getState();
+        const hasInkHistory = e.shiftKey ? ink.stacks.redo.length > 0 : ink.stacks.undo.length > 0;
+        if (!hasInkHistory) return;
+        e.preventDefault();
+        void (e.shiftKey ? ink.redo() : ink.undo());
       }
     };
     window.addEventListener('keydown', onKey);
@@ -118,15 +163,51 @@ export function App() {
         </span>
 
         <div className="ac-toolbar-right">
+          {saveError && <span className="ac-save-error">{saveError.message}</span>}
+          {activeFile?.edited && !dirty && (
+            <span className="ac-badge" title="Saved here, not upstream">
+              local
+            </span>
+          )}
           {activeFile && <span className="ac-lang">{languageName(activeFile.path) ?? 'Text'}</span>}
-          <button
-            type="button"
-            className={`ac-mode ${activeTool ? '' : 'is-active'}`}
-            onClick={clearTool}
-            aria-pressed={!activeTool}
-          >
-            Read
-          </button>
+
+          {activeFile && (
+            <div className="ac-modes" role="group" aria-label="Mode">
+              <button
+                type="button"
+                className={`ac-mode ${mode === 'read' ? 'is-active' : ''}`}
+                onClick={() => {
+                  clearTool();
+                  setMode('read');
+                }}
+                aria-pressed={mode === 'read'}
+              >
+                Read
+              </button>
+              <button
+                type="button"
+                className={`ac-mode ${mode === 'edit' ? 'is-active' : ''}`}
+                onClick={() => {
+                  clearTool();
+                  setMode('edit');
+                }}
+                aria-pressed={mode === 'edit'}
+              >
+                Edit
+              </button>
+            </div>
+          )}
+
+          {mode === 'edit' && activeFile && (
+            <button
+              type="button"
+              className="ac-save"
+              onClick={() => void save()}
+              disabled={!dirty || saving}
+            >
+              {saving ? 'Saving…' : dirty ? 'Save' : 'Saved'}
+            </button>
+          )}
         </div>
       </header>
 
@@ -151,6 +232,8 @@ export function App() {
                 onInitialLineUsed={consumePendingLine}
                 onLineChange={rememberLine}
                 onViewReady={setView}
+                editable={mode === 'edit' && !activeTool}
+                onDocChange={onDocChange}
               />
               <InkSurface view={view} fileId={activeFile.id} text={content} />
               <DisplacedTray />

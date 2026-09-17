@@ -16,6 +16,7 @@ import {
   ensureDefaultLayer,
   eraseStrokes,
   loadForFile,
+  reanchorStrokes,
   restoreStrokes,
   type Placed,
 } from '@/ink/store';
@@ -40,6 +41,17 @@ interface InkState {
 
   undo: () => Promise<void>;
   redo: () => Promise<void>;
+
+  /**
+   * Carry strokes across an edit. `move` maps an old line to its new one.
+   *
+   * In-memory only: the anchors on disk are rewritten once, on save, rather than on every
+   * keystroke.
+   */
+  shift: (move: (line: number) => number) => void;
+
+  /** After a save, recapture every anchor against the text that was written. */
+  reanchor: (text: string) => Promise<void>;
 }
 
 export const useInk = create<InkState>()((set, get) => ({
@@ -101,6 +113,28 @@ export const useInk = create<InkState>()((set, get) => ({
       stacks: history.push(s.stacks, { kind: 'erase', strokes }),
       revision: s.revision + 1,
     }));
+  },
+
+  shift: (move) =>
+    set((s) => {
+      let moved = false;
+      const placed = s.placed.map((p) => {
+        const line = move(p.line);
+        if (line === p.line) return p;
+        moved = true;
+        return { ...p, line };
+      });
+      return moved ? { placed, revision: s.revision + 1 } : {};
+    }),
+
+  reanchor: async (text) => {
+    const { placed, fileId } = get();
+    if (placed.length === 0) return;
+
+    const updated = await reanchorStrokes(placed, text);
+    // The user may have switched files while the writes were in flight.
+    if (get().fileId !== fileId) return;
+    set((s) => ({ placed: updated, revision: s.revision + 1 }));
   },
 
   undo: async () => {

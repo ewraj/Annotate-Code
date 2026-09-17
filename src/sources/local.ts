@@ -187,11 +187,38 @@ export function openFileList(list: FileList): OpenResult & { blobs: Blobs } {
 export class LocalAdapter implements SourceAdapter {
   private readonly cache = new Map<string, string>();
 
+  /**
+   * Present only when this source can actually write back.
+   *
+   * A picked directory hands us live handles and `showDirectoryPicker({ mode: 'readwrite' })`
+   * already asked for permission. An uploaded folder gives `File` objects, which are
+   * snapshots with nowhere to write to — so the method is genuinely absent there, and the
+   * caching wrapper reads that absence as "keep the edit as a local overlay" rather than
+   * having to catch an error and guess what it meant.
+   */
+  writeFile?: (id: string, text: string) => Promise<void>;
+
   constructor(
     readonly source: Source,
     private readonly files: FileEntry[],
     private readonly blobs: Blobs,
-  ) {}
+  ) {
+    if (source.kind === 'local-fs') this.writeFile = this.writeThrough.bind(this);
+  }
+
+  private async writeThrough(id: string, text: string): Promise<void> {
+    const handle = this.blobs.get(id)?.handle;
+    if (!handle) throw new SourceError(`${this.pathOf(id)} is no longer connected.`);
+
+    const writable = await handle.createWritable();
+    try {
+      await writable.write(text);
+    } finally {
+      await writable.close();
+    }
+
+    this.cache.set(id, text);
+  }
 
   async listFiles(): Promise<FileEntry[]> {
     return this.files;
