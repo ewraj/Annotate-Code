@@ -103,7 +103,7 @@ export function ToolPalette({ canUndo = false, canRedo = false, onUndo, onRedo }
     >
       {state.attributesOpen && <AttributesPopover />}
 
-      <div className="ac-row">
+      <div className="ac-palette-tray">
         <div className="ac-group ac-history">
           <button type="button" aria-label="Undo" disabled={!canUndo} onClick={onUndo}>
             <svg viewBox="0 0 24 24" aria-hidden="true">

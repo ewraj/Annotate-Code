@@ -50,8 +50,10 @@ body {
   text-decoration: none;
 }
 
+/* The one piece of orientation in the toolbar — which file you are in. It was the dimmest
+   thing on screen; it should be the most legible. */
 .ac-path {
-  color: #999;
+  color: #555;
   font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
@@ -82,7 +84,7 @@ body {
 }
 
 .ac-lang {
-  color: #bbb;
+  color: #9a9a9a;
   font-size: 12px;
 }
 
@@ -179,11 +181,15 @@ body {
   overflow: hidden;
 }
 
-/* The document owns the rest of the screen, and nothing decorates it. */
+/* The document owns the rest of the screen, and nothing decorates it.
+ *
+ * `overflow: hidden`, not `auto`, and this is load-bearing rather than cosmetic: CodeMirror's
+ * `.cm-scroller` is the scrolling element, and ink is drawn in that element's coordinate
+ * space. A second scroller here would let the document slide out from under the ink. */
 .ac-document {
   flex: 1;
   min-width: 0;
-  overflow: auto;
+  overflow: hidden;
   position: relative;
 }
 

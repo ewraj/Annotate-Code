@@ -17,46 +17,60 @@ import { tags as t } from '@lezer/highlight';
 export const paperTheme = EditorView.theme({
   '&': {
     height: '100%',
-    fontSize: '13px',
+    fontSize: '14px',
     color: '#171717',
     backgroundColor: '#fff',
+    // Ink surfaces are absolutely positioned children of this box, which does not scroll.
+    position: 'relative',
   },
+  // The one element that scrolls. Ink mounts over it and shares its coordinate space, so
+  // nothing outside may scroll as well.
   '.cm-scroller': {
     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
     lineHeight: '1.75',
     overflow: 'auto',
-  },
-  '.cm-content': {
-    padding: '18px 0 45vh',
-    caretColor: '#171717',
+    overscrollBehavior: 'contain',
   },
   // Trailing space below the last line, so the end of a file is annotatable too.
+  '.cm-content': {
+    padding: '20px 0 45vh',
+    caretColor: '#171717',
+  },
+  // The gutter is reference material, not content: legible on purpose, quiet on purpose.
+  // Its right padding is the only gap between a line number and the code it labels.
   '.cm-gutters': {
     backgroundColor: '#fff',
-    color: '#c2c2c2',
+    color: '#a8a8a8',
     border: 'none',
-    paddingRight: '10px',
+    paddingRight: '14px',
     userSelect: 'none',
   },
   '.cm-lineNumbers .cm-gutterElement': {
-    padding: '0 3px 0 18px',
-    minWidth: '52px',
+    padding: '0 0 0 14px',
+    minWidth: '30px',
+    textAlign: 'right',
+    // Line numbers are a column; proportional digits make them shimmer as you scroll.
+    fontVariantNumeric: 'tabular-nums',
   },
   '.cm-foldGutter .cm-gutterElement': {
-    padding: '0 2px',
-    color: '#d4d4d4',
+    padding: '0 3px',
+    color: '#d8d8d8',
   },
-  '.cm-activeLine': { backgroundColor: '#fafafa' },
-  '.cm-activeLineGutter': { backgroundColor: 'transparent', color: '#8a8a8a' },
+  '&:hover .cm-foldGutter .cm-gutterElement': { color: '#a8a8a8' },
+  // No active-line band. A full-bleed stripe across a wide window is the loudest thing on
+  // a page that is meant to read as paper, and in a read-only document it marks nothing
+  // worth marking. The gutter number carries the position instead.
+  '.cm-activeLine': { backgroundColor: 'transparent' },
+  '.cm-activeLineGutter': { backgroundColor: 'transparent', color: '#6b6b6b' },
   '.cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection': {
     backgroundColor: '#dbe6fb',
   },
   '.cm-searchMatch': { backgroundColor: '#fdf0c2', outline: 'none' },
   '.cm-searchMatch.cm-searchMatch-selected': { backgroundColor: '#ffdb4d' },
-  '.cm-selectionMatch': { backgroundColor: '#f0f0f0' },
+  '.cm-selectionMatch': { backgroundColor: '#f3f3f3' },
   '.cm-matchingBracket, &.cm-focused .cm-matchingBracket': {
     backgroundColor: '#eef2fb',
-    outline: '1px solid #cbd8f0',
+    outline: 'none',
   },
   '.cm-panels': {
     backgroundColor: '#fafafa',

@@ -59,7 +59,7 @@
 
 /* ---- the tray --------------------------------------------------------- */
 
-.ac-row {
+.ac-palette-tray {
   display: flex;
   align-items: flex-end;
   gap: 10px;
@@ -77,8 +77,8 @@
   cursor: grab;
 }
 
-.ac-dock-left .ac-row,
-.ac-dock-right .ac-row {
+.ac-dock-left .ac-palette-tray,
+.ac-dock-right .ac-palette-tray {
   flex-direction: column;
   align-items: center;
   height: auto;
@@ -441,7 +441,7 @@
 /* ---- narrow screens ---------------------------------------------------- */
 
 @media (max-width: 560px) {
-  .ac-row {
+  .ac-palette-tray {
     gap: 6px;
     padding: 0 8px;
   }
