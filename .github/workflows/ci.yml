@@ -1,0 +1,58 @@
+name: CI
+
+# Runs on pull requests only.
+#
+# Deploying and verifying are deliberately separate workflows. deploy.yml holds
+# `pages: write` and `id-token: write`, and those permissions have no business being
+# anywhere near code from a fork. It also serialises on a `pages` concurrency group, which
+# would queue every contributor's CI run behind a deploy.
+#
+# Pushes to main are already verified by deploy.yml, which runs the same checks before it
+# publishes anything — so this does not duplicate them here.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+# A pull request only needs its newest commit checked. Older runs for the same branch are
+# answering a question nobody is asking any more.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only. Nothing here needs to write to the repository, and a fork's token should not
+# be able to either.
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify the deploy artifact
+        # The same gate deploy.yml applies before publishing. Catching a dropped CNAME or a
+        # missing app shell in review is a great deal cheaper than catching it in production.
+        run: |
+          test -f dist/CNAME || { echo "::error::dist/CNAME missing — custom domain would drop"; exit 1; }
+          test -f dist/index.html || { echo "::error::dist/index.html missing — landing page gone"; exit 1; }
+          test -f dist/app/index.html || { echo "::error::dist/app/index.html missing — app shell gone"; exit 1; }
+          test -f dist/404.html || { echo "::error::dist/404.html missing — SPA deep links would 404"; exit 1; }
+          grep -q "Read code. Annotate it." dist/index.html || { echo "::error::dist/index.html is not the landing page"; exit 1; }
