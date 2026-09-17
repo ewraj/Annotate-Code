@@ -1,0 +1,25 @@
+# Review is requested automatically from the owners of the paths a pull request touches.
+#
+# A CODEOWNERS entry only requests a review by default. To make it a hard requirement,
+# turn on "require review from Code Owners" in the main branch ruleset.
+
+# Everything, unless something below is more specific.
+*                           @ewraj
+
+# The two documents that define what this product is and what it refuses to be. A change
+# here is a change of direction, not an implementation detail.
+/ANNOTATECODE_PRODUCT_GIST.md  @ewraj
+/IMPLEMENTATION_PLAN.md        @ewraj
+
+# Anchoring decides where somebody's handwriting ends up. Getting it wrong moves a note onto
+# code it was never about, which the product promises never to do silently.
+/src/model/                 @ewraj
+
+# The ink engine, and the coordinate space that keeps strokes welded to the text.
+/src/ink/                   @ewraj
+
+# Supply chain, permissions, and anything that can publish to the live site.
+/.github/                   @ewraj
+/package.json               @ewraj
+/package-lock.json          @ewraj
+/vite.config.ts             @ewraj
