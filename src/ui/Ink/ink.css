@@ -11,10 +11,18 @@
   pointer-events: none;
 }
 
+/*
+ * `width`/`height` are not redundant with `inset: 0`. A canvas is a replaced element, so an
+ * auto width resolves to its intrinsic 300x150 rather than stretching between the insets —
+ * leaving the surface a small box in the corner, with the rest of the document reachable by
+ * the pointer and no way to draw on it.
+ */
 .ac-ink {
   position: absolute;
   inset: 0;
   display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* Highlighter ink darkens the code under it rather than covering it. This has to be an
