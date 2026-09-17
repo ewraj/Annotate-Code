@@ -67,17 +67,32 @@ The goal isn't to build another giant developer platform.
 The goal is to build one small tool that does one thing really well.
 
 
+## Running it locally
+
+```bash
+npm ci
+npm run dev        # http://localhost:5173
+```
+
+```bash
+npm run typecheck  # tsc --noEmit
+npm test           # vitest
+npm run build      # typecheck + production build
+```
+
 ## Contributing
 
 Found a bug? Have an idea? Want to improve the annotation experience?
 
-Issues and pull requests are welcome.
+Issues and pull requests are welcome. Start with **[CONTRIBUTING.md](CONTRIBUTING.md)** — it covers the setup, what the tests expect, and which ideas get declined and why.
 
 If you're contributing, keep the core idea in mind:
 
 **AnnotateCode should stay simple.**
 
 If a feature makes it feel more like an IDE and less like a document you can write on, it's probably worth questioning.
+
+Found a security problem? Please don't open a public issue — see **[SECURITY.md](SECURITY.md)**.
 
 ## Philosophy
 
