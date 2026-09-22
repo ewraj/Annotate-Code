@@ -23,19 +23,19 @@ AnnotateCode is built for that.
 
 ## Features
 
-* 📖 Read code with syntax highlighting and line numbers
-* ✍️ Draw directly on code with a pen
-* 🖍️ Highlight important sections
-* 🧽 Erase and undo annotations
-* 🗂️ Organize annotations into layers
-* 🔖 Bookmark important parts of a codebase
-* 📝 Add typed notes
-* 🔎 Search your annotations
-* 📁 Browse an entire codebase
-* 🐙 Open public GitHub repositories
-* 💾 Save your reading position and annotations
-* ✏️ Edit and create source files
-* 📱 Designed to work across desktop, tablet, and mobile
+*  Read code with syntax highlighting and line numbers
+*  Draw directly on code with a pen
+*  Highlight important sections
+*  Erase and undo annotations
+*  Organize annotations into layers
+*  Bookmark important parts of a codebase
+*  Add typed notes
+*  Search your annotations
+*  Browse an entire codebase
+*  Open public GitHub repositories
+*  Save your reading position and annotations
+*  Edit and create source files
+*  Designed to work across desktop, tablet, and mobile
 
 ## What AnnotateCode is NOT
 
