@@ -33,6 +33,7 @@ import {
   supportsDirectoryPicker,
   walkDirectory,
 } from './local';
+import { isNotebook, notebookToSource, sourceToNotebook } from './notebook';
 import { SourceError, type OpenResult, type SourceAdapter } from './types';
 
 export { SourceError, supportsDirectoryPicker };
@@ -56,9 +57,11 @@ class CachingAdapter implements SourceAdapter {
 
   async readFile(id: string): Promise<string> {
     const stored = await getFile(id);
-    if (stored?.content !== undefined) return stored.content;
+    const view = stored && isNotebook(stored.path) ? notebookToSource : (text: string) => text;
+    // A notebook cached before notebooks were converted is still raw JSON; convert it now.
+    if (stored?.content !== undefined) return view(stored.content);
 
-    const text = await this.inner.readFile(id);
+    const text = view(await this.inner.readFile(id));
 
     if (stored) {
       await putFile({ ...stored, content: text, contentHash: hashText(text), updatedAt: Date.now() });
@@ -78,9 +81,17 @@ class CachingAdapter implements SourceAdapter {
    */
   async writeFile(id: string, text: string): Promise<void> {
     const wroteThrough = Boolean(this.inner.writeFile);
-    if (this.inner.writeFile) await this.inner.writeFile(id, text);
-
     const stored = await getFile(id);
+
+    if (this.inner.writeFile) {
+      // The reader edits a notebook's code view; the file on disk must stay a notebook.
+      const onDisk =
+        stored && isNotebook(stored.path)
+          ? sourceToNotebook(text, await this.inner.readFile(id))
+          : text;
+      await this.inner.writeFile(id, onDisk);
+    }
+
     if (!stored) return;
 
     await putFile({
@@ -111,7 +122,9 @@ class StoredAdapter implements SourceAdapter {
 
   async readFile(id: string): Promise<string> {
     const stored = await getFile(id);
-    if (stored?.content !== undefined) return stored.content;
+    if (stored?.content !== undefined) {
+      return isNotebook(stored.path) ? notebookToSource(stored.content) : stored.content;
+    }
 
     throw new SourceError(
       'This file was never opened, and the folder is no longer connected.',

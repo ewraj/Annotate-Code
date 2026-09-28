@@ -80,6 +80,9 @@ const SKIP_FILES = new Set([
 /** Past this, a "source file" is generated, minified, or a database in disguise. */
 export const MAX_FILE_BYTES = 2 * 1024 * 1024;
 
+/** A notebook full of plots and tables is big on disk and small once its outputs are gone. */
+export const MAX_NOTEBOOK_BYTES = 20 * 1024 * 1024;
+
 export function extensionOf(path: string): string {
   const name = path.slice(path.lastIndexOf('/') + 1);
   const dot = name.lastIndexOf('.');
@@ -112,7 +115,9 @@ export function shouldSkip(path: string, size?: number): FilterResult {
   // `.min.js` and friends are machine output wearing a source extension.
   if (/\.min\.(js|css|mjs|cjs)$/i.test(name)) return { skipped: true, reason: 'minified' };
 
-  if (size !== undefined && size > MAX_FILE_BYTES) return { skipped: true, reason: 'size' };
+  // Notebooks are mostly outputs, which are stripped before reading, so they get more room.
+  const limit = extensionOf(path) === 'ipynb' ? MAX_NOTEBOOK_BYTES : MAX_FILE_BYTES;
+  if (size !== undefined && size > limit) return { skipped: true, reason: 'size' };
 
   return { skipped: false };
 }

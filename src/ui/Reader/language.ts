@@ -29,7 +29,8 @@ const BY_FILENAME: Record<string, string> = {
 function descriptionFor(path: string) {
   const name = (path.slice(path.lastIndexOf('/') + 1) || path).toLowerCase();
 
-  const byName = BY_FILENAME[name];
+  // Notebooks are shown as their code in percent format, so they read as Python.
+  const byName = name.endsWith('.ipynb') ? 'python' : BY_FILENAME[name];
   if (byName) {
     const match = languages.find((l) => l.name.toLowerCase() === byName || l.alias.includes(byName));
     if (match) return match;
